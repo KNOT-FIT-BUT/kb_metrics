@@ -67,6 +67,7 @@ class KnowledgeBase:
 			self.path_to_kb = os.path.abspath(os.path.join(SCRIPT_DIR, "./inputs/KB_{}_all.tsv".format(lang)))
 		else:
 			self.path_to_kb = path_to_kb
+
 		self.headKB, self.ent_type_col = self.getDictHeadKB(self.path_to_kb)
 
 		self._kb_loaded = False
@@ -382,11 +383,39 @@ class KnowledgeBase:
 
 			# computing CONFIDENCE
 			columns[self.get_col_for(columns, "CONFIDENCE")] = "%.2f" % numpy.average([score_wiki, score_metrics], weights=[5, 1])
+	
+	def save_changes(self, output_file=""):
+		# Add +stats to filename
+		if not output_file:
+			file_path = "".join(self.path_to_kb.split("/")[:-1])
+			file_name = "".join(self.path_to_kb.split("/")[-1].split(".")[:-1])
+			file_extension = file_name.split(".")[-1]
+			if not file_extension:
+				file_extension = "tsv"
+			
+			file_name += "+stats"
+			output_file = f"{file_path}/{file_name}.{file_extension}"
+		else:
+			output_file = self.path_to_kb
+		
 
+		with open(output_file, "w") as out_file:
+			# Save KB head
+			KB_lines = self.getKBLines(self.path_to_kb, KB_PART.HEAD)
+			for line in KB_lines:
+				out_file.write("\t".join(line))
+				out_file.write("\n")
 
+			# head-data separator
+			out_file.write("\n")
+
+			# Save KB data
+			for line in self.lines+[""]:
+				out_file.write("\t".join(line))
+				out_file.write("\n")
+		
 	def _str1(self):
 		return '\n'.join(['\t'.join(line) for line in self.lines+[""]])
-
 
 	def _str2(self):
 		result = ""
@@ -394,6 +423,6 @@ class KnowledgeBase:
 			result += '\t'.join(line) + '\n'
 		return result
 
-
 	def __str__(self):
 		return self._str1()
+
