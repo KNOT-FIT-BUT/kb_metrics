@@ -39,16 +39,17 @@ debug.DEBUG_EN = False
 from libs.debug import print_dbg, print_dbg_en
 
 # CONSTANTS
+metrics_names = ["SCORE WIKI",	"SCORE METRICS", "CONFIDENCE"]
+stats_names = ["WIKI PRIMARY SENSE", "WIKI BACKLINKS", "WIKI HITS"]
+all_stats = stats_names + metrics_names
 
 # getting the absolute path to the directory with this script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 KB_MULTIVALUE_DELIM = "|"
 
-
 class KB_PART(Enum):
 	HEAD = 1
 	DATA = 2
-
 
 # FUNCTIONS AND CLASSES
 class KnowledgeBase:
