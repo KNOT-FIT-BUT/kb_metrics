@@ -325,9 +325,69 @@ class KnowledgeBase:
 		column_rename = {'backlinks' : "WIKI BACKLINKS", 'hits' : "WIKI HITS", 'ps' : "WIKI PRIMARY SENSE"}
 		if column_name == 'link':
 			return self.get_data_for(line, "WIKIPEDIA URL")
-		else:
+		elif column_name in column_rename.keys():
 			return self.get_data_for(line, column_rename[column_name])
+		else:
+			return self.get_data_for(line, column_name)
 
+	# Check if all stats present in kb head
+	def check_all_stats_present(self) -> bool:
+		self.check_or_load_kb()
+		stats = self.headKB['__stats__']
+		for stat in all_stats:
+			if stat not in stats.keys():
+				return False
+		return True
+
+	# Checks head kb for '__stats__' line
+	# if none found returns false
+	# if found checks for backlinks, hits and ps (needed for calculating metrics)
+	# adds empty columns for new metrics (needed in order for the script to run properly)
+	def check_add_kb_stats(self) -> bool:
+		# Check for neccessary staxs in KB head
+		if "__stats__" not in self.headKB:
+			return False
+
+		stats = self.headKB['__stats__']
+
+		# Check neccessary stats
+		for stat in stats_names:
+			if stat not in stats.keys():
+				return False
+		
+		# Add metric columns to headkb if needed 
+		for metric in metrics_names:
+			if metric not in stats.keys():
+				self.headKB["__stats__"][metric] = len(self.headKB["__stats__"])
+		
+		# Check for neccessary stats line by line
+		for line_num in range(1, len(self.lines) + 1):
+			columns = self.lines[line_num - 1]
+			
+			for stat in stats_names:
+				try:
+					if int(columns[self.get_col_for(columns, stat)]) == 0:
+						columns.insert(self.get_col_for(columns, stats), '0')
+				except:
+					columns.insert(self.get_col_for(columns, stat), '0')
+
+
+			# add metrics columns if needed
+			# (null values -> needed in order for script to run properly)
+			for metric in metrics_names:
+				idx = self.get_col_for(columns, metric)
+				try:
+					columns[idx] = '0'
+				except IndexError:
+					columns.insert(idx, '0')
+				except Exception as e:
+					print("Error: Unknown exception occurred: ")
+					print(e)
+					exit(1)
+
+			self.lines[line_num - 1] = columns
+			# print(self.lines[line_num-1])
+		return True
 
 	def insert_metrics(self):
 		""" Computing SCORE WIKI, SCORE METRICS and CONFIDENCE and adding them to the KB. """
