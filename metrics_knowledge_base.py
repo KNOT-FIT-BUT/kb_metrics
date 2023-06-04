@@ -341,7 +341,7 @@ class KnowledgeBase:
 				self.metrics[ent_type_set_index].setdefault('wiki_backlinks', []).append(int(self.get_wiki_value(line_num, 'backlinks')))
 				self.metrics[ent_type_set_index].setdefault('wiki_hits', []).append(int(self.get_wiki_value(line_num, 'hits')))
 				self.metrics[ent_type_set_index].setdefault('wiki_ps', []).append(int(self.get_wiki_value(line_num, 'ps')))
-		
+
 		# sorting statistics
 		for i in self.metrics:
 			for j in self.metrics[i]:
@@ -399,13 +399,16 @@ class KnowledgeBase:
 			output_file = f"{file_path}/{file_name}.{file_extension}"
 		else:
 			output_file = self.path_to_kb
-		
 
 		with open(output_file, "w") as out_file:
 			# Save KB head
 			KB_lines = self.getKBLines(self.path_to_kb, KB_PART.HEAD)
 			for line in KB_lines:
-				out_file.write("\t".join(line))
+				# Add new columns in __stats__ line (if new metrics were inserted)
+				if any("<__stats__>" in column for column in line):
+					out_file.write("<__stats__>" + "\t".join(self.headKB["__stats__"].keys()))
+				else:
+					out_file.write("\t".join(line))
 				out_file.write("\n")
 
 			# head-data separator
