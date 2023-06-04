@@ -383,13 +383,15 @@ class KnowledgeBase:
 
 			# computing CONFIDENCE
 			columns[self.get_col_for(columns, "CONFIDENCE")] = "%.2f" % numpy.average([score_wiki, score_metrics], weights=[5, 1])
+		self.save_changes()
 	
 	def save_changes(self, output_file=""):
-		# Add +stats to filename
+		# Add '+stats' to filename
 		if not output_file:
-			file_path = "".join(self.path_to_kb.split("/")[:-1])
-			file_name = "".join(self.path_to_kb.split("/")[-1].split(".")[:-1])
+			file_path = os.path.dirname(os.path.abspath(self.path_to_kb))
+			file_name = os.path.basename(os.path.abspath(self.path_to_kb))
 			file_extension = file_name.split(".")[-1]
+			file_name = "".join(file_name.split(".")[:-1])
 			if not file_extension:
 				file_extension = "tsv"
 			
