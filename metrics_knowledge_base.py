@@ -394,6 +394,19 @@ class KnowledgeBase:
 		
 		self.check_or_load_kb()
 
+		# CHECK INPUT KB:
+		# If all stats and metrics are already present
+		if self.check_all_stats_present():
+			print("Warning: NO METRICS ADDED!")
+			print("-> all stats and metrics already present")
+			return
+
+		# If some neccessary stats missing
+		if not self.check_add_kb_stats():
+			print("Warning: NO METRICS ADDED!")
+			print("-> missing neccessary stats (backlinks/hits/ps)")
+			return
+		
 		# computing statistics
 		for line_num in range(1, len(self.lines) + 1):
 			ent_type_set = self.get_ent_type(line_num)
