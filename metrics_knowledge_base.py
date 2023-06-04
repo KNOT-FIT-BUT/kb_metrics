@@ -260,7 +260,10 @@ class KnowledgeBase:
 	def get_data_for(self, line, col_name, col_name_type=None):
 		""" Line numbering from one. """
 		
-		return self.get_field(line, self.get_col_for(line, col_name, col_name_type))
+		val = self.get_field(line, self.get_col_for(line, col_name, col_name_type))
+		if val == '':
+			val = '0'
+		return val
 
 
 	def nonempty_columns(self, line):
