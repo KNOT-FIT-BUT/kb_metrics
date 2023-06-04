@@ -25,6 +25,7 @@ limitations under the License.
 
 import os
 import sys
+import csv
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import re
@@ -32,11 +33,7 @@ import numpy
 from enum import Enum
 from orderedset import OrderedSet
 
-# for debugging purposes only
-from configs import LANG_DEFAULT
-from libs import debug
-debug.DEBUG_EN = False
-from libs.debug import print_dbg, print_dbg_en
+csv.field_size_limit(sys.maxsize)
 
 # CONSTANTS
 metrics_names = ["SCORE WIKI",	"SCORE METRICS", "CONFIDENCE"]
@@ -62,8 +59,7 @@ class KnowledgeBase:
     * Instance je reprezentována řetìzcem obsahujícím cestu k HEAD-KB, KB a dále informaci zda-li je KB načtena do pamìti.
     """
 
-#	def __init__(self, path_to_headkb=PATH_HEAD_KB, path_to_kb=None):
-    def __init__(self, lang = LANG_DEFAULT, path_to_kb = None):
+    def __init__(self, lang = "en", path_to_kb = None):
         if path_to_kb is None:
             self.path_to_kb = os.path.abspath(os.path.join(SCRIPT_DIR, "./inputs/KB_{}_all.tsv".format(lang)))
         else:
@@ -145,14 +141,12 @@ class KnowledgeBase:
                     head_type = splitted.group("TYPE")
                     if head_type not in headKB:
                         headKB[head_type] = {}
-                    print_dbg(head_type, ": ", line_num, delim="")
                 else:
                     splitted = PARSER_OTHER.search(plain_column)
 
                 if splitted is not None: # This type has no defined columns
                     col_name = splitted.group("NAME")
                     headKB[head_type][col_name] = col_num
-                    print_dbg(head_type, " -> ", col_name, ": ", col_num, delim="")
 
                 if col_name == "TYPE":
                     if ent_type_col is None:
@@ -217,7 +211,6 @@ class KnowledgeBase:
         except IndexError:
             raise RuntimeError("Line %s does not have column %s" % (line, column))
         except:
-            print_dbg_en("line %s column %s\n" % (line, column))
             raise
 
 
@@ -386,11 +379,66 @@ class KnowledgeBase:
                     exit(1)
 
             self.lines[line_num - 1] = columns
-            # print(self.lines[line_num-1])
         return True
+    
+    # Inserts statistics (backlinks, pageviews and primary sense)
+    # from an input file
+    # Expected format <name> \t <backlinks> \t <pageviews> \t <primary sense>   
+    def insert_stats(self, stats_file, save_changes=True) -> bool:
+        # If stats already present, skip
+        if "__stats__" in self.headKB:
+            return False
+        
+        if not os.path.exists(stats_file):
+            print("Stats file does not exist")
+            return False
+        
+        # Add stats to kb head
+        self.headKB['__stats__'] = {}
+        for stat in stats_names:
+            self.headKB["__stats__"][stat] = len(self.headKB["__stats__"])
+        
+        stats = self.headKB["__stats__"]
 
-    def insert_metrics(self):
-        """ Computing SCORE WIKI, SCORE METRICS and CONFIDENCE and adding them to the KB. """
+        # Add columns for stats
+        for line_num in range(1, len(self.lines) + 1):
+            columns = self.lines[line_num - 1]     
+            for stat in stats_names:
+                try:
+                    if int(columns[self.get_col_for(columns, stat)]) == 0:
+                        columns.insert(self.get_col_for(columns, stats), '0')
+                except:
+                    columns.insert(self.get_col_for(columns, stat), '0')
+            self.lines[line_num - 1] = columns
+        
+        # Load stats 
+        stats = {}
+        with open(stats_file, "r") as file_in:
+            in_data = csv.reader(file_in, delimiter='\t')
+            for val in in_data:
+                art_name = str(val[0]).replace("_", " ")
+                stats[art_name] = [val[1], val[2], val[3]]
+            del in_data
+        
+        # Insert stats to KB
+        # Add columns for stats
+        for line_num in range(1, len(self.lines) + 1):
+            columns = self.lines[line_num - 1]     
+            art_name = columns[self.get_col_for(columns, "NAME")]
+            if stats.get(art_name):
+                for idx, stat in enumerate(stats_names):
+                    columns[self.get_col_for(columns, stat)] = stats[art_name][idx] 
+                stats.pop(art_name, None)
+            self.lines[line_num - 1] = columns
+        
+        del stats
+
+        if save_changes:
+            self.save_changes()
+      
+
+    # Computing SCORE WIKI, SCORE METRICS and CONFIDENCE and adding them to the KB
+    def insert_metrics(self, save_changes=True):
         
         self.check_or_load_kb()
 
@@ -460,7 +508,9 @@ class KnowledgeBase:
 
             # computing CONFIDENCE
             columns[self.get_col_for(columns, "CONFIDENCE")] = "%.2f" % numpy.average([score_wiki, score_metrics], weights=[5, 1])
-        self.save_changes()
+        
+        if save_changes:
+            self.save_changes()
     
     def save_changes(self, output_file=""):
         # Add '+stats' to filename
@@ -477,16 +527,23 @@ class KnowledgeBase:
         else:
             output_file = self.path_to_kb
 
+        print("saving changes to ", output_file)
         with open(output_file, "w") as out_file:
             # Save KB head
             KB_lines = self.getKBLines(self.path_to_kb, KB_PART.HEAD)
+            stats_added = False
             for line in KB_lines:
                 # Add new columns in __stats__ line (if new metrics were inserted)
                 if any("<__stats__>" in column for column in line):
                     out_file.write("<__stats__>" + "\t".join(self.headKB["__stats__"].keys()))
+                    stats_added = True
                 else:
                     out_file.write("\t".join(line))
                 out_file.write("\n")
+            if not stats_added:
+                out_file.write("<__stats__>" + "\t".join(self.headKB["__stats__"].keys()))
+                out_file.write("\n")
+
 
             # head-data separator
             out_file.write("\n")
