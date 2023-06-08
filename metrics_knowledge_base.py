@@ -92,7 +92,7 @@ class KnowledgeBase:
         with open(fpath) as fd:
             # skip version of KB
             next(fd)
-            for line in fd:
+            for line_num, line in enumerate(fd):
                 if line == "\n":
                     if kb_part == KB_PART.HEAD:
                         break
@@ -100,7 +100,25 @@ class KnowledgeBase:
                 elif line != "":
                     if not data_part and kb_part == KB_PART.DATA:
                         continue
-                    lines.append(line[:-1].split("\t"))
+                    if data_part:
+                        # Add missing line columns
+                        line_split = line.split("\t")
+                        line_cols = len(line_split)
+                        ent_type = line_split[self.ent_type_col]
+                        ent_type = ent_type.split(self.type_delim)
+                        ent_type_set = OrderedSet(ent_type)
+                        
+                        if "__generic__" in self.headKB and "__generic__" not in ent_type_set:
+                            ent_type_set = OrderedSet(["__generic__"]) | ent_type_set
+
+                        min_line_cols = 0
+                        for item in ent_type_set:
+                            min_line_cols += len(self.headKB[item])  
+
+                        # Add missing columns + add columns for possible stats                      
+                        lines.append(line[:-1].split("\t") + ['' for _ in range(min_line_cols - line_cols + len(all_stats))])
+                    else:
+                        lines.append(line[:-1].split("\t"))
         return lines
 
 
@@ -180,7 +198,6 @@ class KnowledgeBase:
 
     def get_ent_type(self, line):
         """ Returns a set of a type of an entity at the line of the knowledge base. """
-        
         ent_type = self.get_field(line, self.ent_type_col)
         ent_type = ent_type.split(self.type_delim)
         ent_type_set = OrderedSet(ent_type)
@@ -199,7 +216,6 @@ class KnowledgeBase:
 
     def get_field(self, line, column):
         """ Returns a column of a line in the knowledge base. """
-
         try:
             if isinstance(line, list): # line jako sloupce dané entity
                 return line[column]
