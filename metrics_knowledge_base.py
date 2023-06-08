@@ -283,6 +283,13 @@ class KnowledgeBase:
 
         return len(self.get_data_for(line, "DESCRIPTION"))
 
+    def show_progress(self, val, max, interval=1, message=""):
+        if val % interval == 0:
+            print(f"{message}{(val/max)*100}%", end="\r")
+        
+        # Newline after finish
+        if val == max:
+            print()
 
     def metric_percentile(self, line, metric):
         """ Computing a percentile score for a given metric and entity. """
