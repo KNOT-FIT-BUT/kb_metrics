@@ -37,7 +37,7 @@ csv.field_size_limit(sys.maxsize)
 
 # CONSTANTS
 metrics_names = ["SCORE WIKI",	"SCORE METRICS", "CONFIDENCE"]
-stats_names = ["WIKI PRIMARY SENSE", "WIKI BACKLINKS", "WIKI HITS"]
+stats_names = ["WIKI BACKLINKS", "WIKI HITS", "WIKI PRIMARY SENSE"]
 all_stats = stats_names + metrics_names
 
 # getting the absolute path to the directory with this script
