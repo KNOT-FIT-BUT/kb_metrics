@@ -280,13 +280,13 @@ class KnowledgeBase:
 
         return len(self.get_data_for(line, "DESCRIPTION"))
 
-    def show_progress(self, val, max, interval=1, message=""):
+    def show_progress(self, val, max, interval=1, message="", end_message=""):
         if val % interval == 0:
-            print(f"{message}{(val/max)*100}%", end="\r")
-        
+            print(f"{message}{round((val/max)*100,1)}%")
+
         # Newline after finish
         if val == max:
-            print()
+            print(end_message + (len(message)+5) * " ")
 
     def metric_percentile(self, line, metric):
         """ Computing a percentile score for a given metric and entity. """
@@ -372,11 +372,11 @@ class KnowledgeBase:
 
         stats = self.headKB["__stats__"]
 
-        print("Loading kb into memory")
+        print("Loading KB")
         self.check_or_load_kb()
         
         # Load stats 
-        print("Loading stats")
+        print("Loading STATS")
         stats = {}
         with open(stats_file, "r") as file_in:
             for line in file_in:
@@ -386,8 +386,14 @@ class KnowledgeBase:
                 stats[values[0].replace("_"," ")] = [values[1], values[2], values[3].rstrip()]
         # Insert stats to KB
         # Add columns for stats
-        print("Inserting stats")
         for line_num in range(1, len(self.lines) + 1):
+            self.show_progress(
+                val=line_num - 1,
+                max=len(self.lines),
+                interval=10000,
+                message="Inserting stats.. ",
+                end_message="Stats inserted."
+                )
             columns = self.lines[line_num - 1]     
             art_name = columns[self.get_col_for(columns, "NAME")]
             if stats.get(art_name):
@@ -399,10 +405,11 @@ class KnowledgeBase:
         del stats
 
         # Insert metrics (calculated from the 3 stats)
-        self.insert_metrics()
+        self.insert_metrics(save_changes=False)
 
         if save_changes:
             self.save_changes()
+        return True
       
 
     # Computing SCORE WIKI, SCORE METRICS and CONFIDENCE and adding them to the KB
@@ -426,7 +433,13 @@ class KnowledgeBase:
         
         # computing statistics
         for line_num in range(1, len(self.lines) + 1):
-            self.show_progress(line_num, len(self.lines), interval=10000, message="Computing statistics... ")
+            self.show_progress(
+                val=line_num,
+                max=len(self.lines),
+                interval=10000,
+                message="Computing statistics... ",
+                end_message="Statistics computed."
+                )
             ent_type_set = self.get_ent_type(line_num)
             ent_type_set_index = repr(set(ent_type_set)) # using normal set for indexing because {1,3,2} == {1,2,3} but OrderedSet([1,3,2]) != OrderedSet([1,2,3])
             self.metrics.setdefault(ent_type_set_index, {})
@@ -446,7 +459,6 @@ class KnowledgeBase:
         for i in self.metrics:
             for j in self.metrics[i]:
                 for k in range(0, len(self.metrics[i][j])):
-                    self.show_progress(line_num, len(self.lines), interval=10000, message="Indexing statistics... ")
                     if self.metrics[i][j][k] not in self.metric_index.setdefault(i, {}).setdefault(j, {}):
                         max_value = float(self.metrics[i][j][-1])
                         if j in ['wiki_backlinks', 'wiki_hits']:
@@ -459,8 +471,13 @@ class KnowledgeBase:
 
         # computing SCORE WIKI, SCORE METRICS and CONFIDENCE
         for line_num in range(1, len(self.lines) + 1):
-            self.show_progress(line_num, len(self.lines), interval=10000, message="Computing metrics... ")
-
+            self.show_progress(
+                val=line_num - 1,
+                max=len(self.lines),
+                interval=10000,
+                message="Computing metrics... ",
+                end_message="Metrics computed."
+                )
             columns = self.lines[line_num - 1]
             
             # computing SCORE WIKI
