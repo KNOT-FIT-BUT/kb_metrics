@@ -235,42 +235,21 @@ class KnowledgeBase:
 
         # getting the entity type
         ent_type_set = self.get_ent_type(line)
-
         col = 0
-        colCnt = 0
-        if col_name_type: # Je-li definován \a col_name_type, hledá se \a col_name pouze v nìm.
-            if col_name_type not in ent_type_set:
-                raise RuntimeError("Bad column name '%s' for line '%s' and col_name_type '%s'." % (col_name, line, col_name_type))
-            
-            for ent_supertype in ent_type_set:
-                if ent_supertype == col_name_type:
-                    if col_name in self.headKB[ent_supertype]:
-                        col = self.headKB[ent_supertype][col_name]
-                        col += colCnt
-                        break
-                    else:
-                        raise RuntimeError("Bad column name '%s' for line '%s' and col_name_type '%s'." % (col_name, line, col_name_type))
-                else:
-                    colCnt += len(self.headKB[ent_supertype])
-        else: # Není-li definován \a col_name_type, pak se postupnì projde celá uspořádaná množina typù \a ent_type_set, kterých je daná entita podtypem.
-            for ent_supertype in ent_type_set:
-                if col_name in self.headKB[ent_supertype]:
-                    col = self.headKB[ent_supertype][col_name]
-                    col += colCnt
-                    break
-                else:
-                    colCnt += len(self.headKB[ent_supertype])
+        for type_name in ent_type_set:
+            if self.headKB[type_name].get(col_name) is not None:
+                return col + int(self.headKB[type_name][col_name])
             else:
-                raise RuntimeError("Bad column name '%s' for line '%s'." % (col_name, line))
+                col += len(self.headKB[type_name])
         
-        return col
+        raise RuntimeError(f"Column name {col_name} does not exist for this line: {line}") 
 
 
     def get_data_for(self, line, col_name, col_name_type=None):
         """ Line numbering from one. """
         
         val = self.get_field(line, self.get_col_for(line, col_name, col_name_type))
-        if val == '':
+        if val == '' or val == 'NF':
             val = '0'
         return val
 
