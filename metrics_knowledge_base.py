@@ -282,11 +282,12 @@ class KnowledgeBase:
 
     def show_progress(self, val, max, interval=1, message="", end_message=""):
         if val % interval == 0:
-            print(f"{message}{round((val/max)*100,1)}%", end="\r")
+            print(f"{message}\t{round((val/max)*100,1)}%", end="\r")
 
         # Newline after finish
         if val == max:
-            print("\n" + end_message + (len(message)+5) * " ")
+            print(f"{message}\t100.0%")
+            print(end_message + (len(message)+5) * " ")
 
     def metric_percentile(self, line, metric):
         """ Computing a percentile score for a given metric and entity. """
@@ -388,10 +389,10 @@ class KnowledgeBase:
         # Add columns for stats
         for line_num in range(1, len(self.lines) + 1):
             self.show_progress(
-                val=line_num - 1,
+                val=line_num,
                 max=len(self.lines),
                 interval=10000,
-                message="Inserting stats.. ",
+                message="Inserting stats... ",
                 end_message="Stats inserted."
                 )
             columns = self.lines[line_num - 1]     
@@ -437,7 +438,7 @@ class KnowledgeBase:
                 val=line_num,
                 max=len(self.lines),
                 interval=10000,
-                message="Computing statistics... ",
+                message="Computing stats... ",
                 end_message="Statistics computed."
                 )
             ent_type_set = self.get_ent_type(line_num)
@@ -472,7 +473,7 @@ class KnowledgeBase:
         # computing SCORE WIKI, SCORE METRICS and CONFIDENCE
         for line_num in range(1, len(self.lines) + 1):
             self.show_progress(
-                val=line_num - 1,
+                val=line_num,
                 max=len(self.lines),
                 interval=10000,
                 message="Computing metrics... ",
