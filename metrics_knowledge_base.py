@@ -25,15 +25,12 @@ limitations under the License.
 
 import os
 import sys
-import csv
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import re
 import numpy
 from enum import Enum
 from orderedset import OrderedSet
-
-csv.field_size_limit(sys.maxsize)
 
 # CONSTANTS
 metrics_names = ["SCORE WIKI",	"SCORE METRICS", "CONFIDENCE"]
