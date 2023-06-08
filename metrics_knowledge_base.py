@@ -372,41 +372,37 @@ class KnowledgeBase:
         self.headKB['__stats__'] = {}
         for stat in stats_names:
             self.headKB["__stats__"][stat] = len(self.headKB["__stats__"])
-        
+
         stats = self.headKB["__stats__"]
 
-        # Add columns for stats
-        for line_num in range(1, len(self.lines) + 1):
-            columns = self.lines[line_num - 1]     
-            for stat in stats_names:
-                try:
-                    if int(columns[self.get_col_for(columns, stat)]) == 0:
-                        columns.insert(self.get_col_for(columns, stats), '0')
-                except:
-                    columns.insert(self.get_col_for(columns, stat), '0')
-            self.lines[line_num - 1] = columns
+        print("Loading kb into memory")
+        self.check_or_load_kb()
         
         # Load stats 
+        print("Loading stats")
         stats = {}
         with open(stats_file, "r") as file_in:
-            in_data = csv.reader(file_in, delimiter='\t')
-            for val in in_data:
-                art_name = str(val[0]).replace("_", " ")
-                stats[art_name] = [val[1], val[2], val[3]]
-            del in_data
-        
+            for line in file_in:
+                values = line.split("\t")
+                if len(values) != 4:
+                    continue
+                stats[values[0].replace("_"," ")] = [values[1], values[2], values[3].rstrip()]
         # Insert stats to KB
         # Add columns for stats
+        print("Inserting stats")
         for line_num in range(1, len(self.lines) + 1):
             columns = self.lines[line_num - 1]     
             art_name = columns[self.get_col_for(columns, "NAME")]
             if stats.get(art_name):
+                val = stats.pop(art_name)
                 for idx, stat in enumerate(stats_names):
-                    columns[self.get_col_for(columns, stat)] = stats[art_name][idx] 
-                stats.pop(art_name, None)
+                    columns[self.get_col_for(columns, stat)] = val[idx]
             self.lines[line_num - 1] = columns
         
         del stats
+
+        # Insert metrics (calculated from the 3 stats)
+        self.insert_metrics()
 
         if save_changes:
             self.save_changes()
