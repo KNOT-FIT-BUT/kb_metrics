@@ -282,11 +282,11 @@ class KnowledgeBase:
 
     def show_progress(self, val, max, interval=1, message="", end_message=""):
         if val % interval == 0:
-            print(f"{message}{round((val/max)*100,1)}%")
+            print(f"{message}{round((val/max)*100,1)}%", end="\r")
 
         # Newline after finish
         if val == max:
-            print(end_message + (len(message)+5) * " ")
+            print("\n" + end_message + (len(message)+5) * " ")
 
     def metric_percentile(self, line, metric):
         """ Computing a percentile score for a given metric and entity. """
