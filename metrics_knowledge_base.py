@@ -350,37 +350,10 @@ class KnowledgeBase:
             if stat not in stats.keys():
                 return False
         
-        # Add metric columns to headkb if needed 
         for metric in metrics_names:
             if metric not in stats.keys():
                 self.headKB["__stats__"][metric] = len(self.headKB["__stats__"])
         
-        # Check for neccessary stats line by line
-        for line_num in range(1, len(self.lines) + 1):
-            columns = self.lines[line_num - 1]
-            
-            for stat in stats_names:
-                try:
-                    if int(columns[self.get_col_for(columns, stat)]) == 0:
-                        columns.insert(self.get_col_for(columns, stats), '0')
-                except:
-                    columns.insert(self.get_col_for(columns, stat), '0')
-
-
-            # add metrics columns if needed
-            # (null values -> needed in order for script to run properly)
-            for metric in metrics_names:
-                idx = self.get_col_for(columns, metric)
-                try:
-                    columns[idx] = '0'
-                except IndexError:
-                    columns.insert(idx, '0')
-                except Exception as e:
-                    print("Error: Unknown exception occurred: ")
-                    print(e)
-                    exit(1)
-
-            self.lines[line_num - 1] = columns
         return True
     
     # Inserts statistics (backlinks, pageviews and primary sense)
