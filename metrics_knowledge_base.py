@@ -425,9 +425,11 @@ class KnowledgeBase:
             print("Warning: NO METRICS ADDED!")
             print("-> missing neccessary stats (backlinks/hits/ps)")
             return
+
         
         # computing statistics
         for line_num in range(1, len(self.lines) + 1):
+            self.show_progress(line_num, len(self.lines), interval=10000, message="Computing statistics... ")
             ent_type_set = self.get_ent_type(line_num)
             ent_type_set_index = repr(set(ent_type_set)) # using normal set for indexing because {1,3,2} == {1,2,3} but OrderedSet([1,3,2]) != OrderedSet([1,2,3])
             self.metrics.setdefault(ent_type_set_index, {})
@@ -447,6 +449,7 @@ class KnowledgeBase:
         for i in self.metrics:
             for j in self.metrics[i]:
                 for k in range(0, len(self.metrics[i][j])):
+                    self.show_progress(line_num, len(self.lines), interval=10000, message="Indexing statistics... ")
                     if self.metrics[i][j][k] not in self.metric_index.setdefault(i, {}).setdefault(j, {}):
                         max_value = float(self.metrics[i][j][-1])
                         if j in ['wiki_backlinks', 'wiki_hits']:
@@ -459,6 +462,7 @@ class KnowledgeBase:
 
         # computing SCORE WIKI, SCORE METRICS and CONFIDENCE
         for line_num in range(1, len(self.lines) + 1):
+            self.show_progress(line_num, len(self.lines), interval=10000, message="Computing metrics... ")
 
             columns = self.lines[line_num - 1]
             
