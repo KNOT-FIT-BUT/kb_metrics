@@ -514,8 +514,6 @@ class KnowledgeBase:
             
             file_name += "+stats"
             output_file = f"{file_path}/{file_name}.{file_extension}"
-        else:
-            output_file = self.path_to_kb
 
         print("saving changes to ", output_file)
         with open(output_file, "w") as out_file:
