@@ -84,6 +84,11 @@ class KnowledgeBase:
     def getKBLines(self, fpath, kb_part):
         assert isinstance(kb_part, KB_PART)
 
+        # Check for empty file
+        if os.stat(fpath).st_size == 0:
+            print("Error: empty KB file")
+            exit(1)
+
         lines = []
         data_part = False
         with open(fpath) as fd:
