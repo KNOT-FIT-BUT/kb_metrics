@@ -184,6 +184,12 @@ class KnowledgeBase:
     def load_kb(self):
         # loading knowledge base
         self.lines = self.getKBLines(self.path_to_kb, KB_PART.DATA)
+  
+        # Check if any data
+        if len(self.lines) == 0:
+            print("Error: empty KB (no lines with data)")
+            exit(1)
+
         self._kb_loaded = True
 
 
