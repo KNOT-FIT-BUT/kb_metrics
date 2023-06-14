@@ -515,6 +515,9 @@ class KnowledgeBase:
             file_name += "+stats"
             output_file = f"{file_path}/{file_name}.{file_extension}"
 
+        # Make all dirs in output path if necessary
+        os.makedirs(os.path.dirname(output_file, exist_ok=True))
+
         print("saving changes to ", output_file)
         with open(output_file, "w") as out_file:
             # Save KB head
