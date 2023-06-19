@@ -387,6 +387,9 @@ class KnowledgeBase:
         print("Loading KB")
         self.check_or_load_kb()
         
+        # Expected stats file format
+        # ARTICLE NAME \t BACKLINKS \t PAGEVIEWS (HITS) \t PRIMARY SENSE
+
         # Load stats 
         print("Loading STATS")
         stats = {}
@@ -398,6 +401,12 @@ class KnowledgeBase:
                 if len(values) != 4:
                     print(f"Warning: line {line_num} skipped due to invalid number of values") 
                     continue
+                
+                # values[0] ARTICLE_NAME
+                # values[1] BACKLINKS
+                # values[2] PAGEVIEWS (HITS)
+                # values[3] PRIMARY_SENSE
+
                 stats[values[0].replace("_"," ")] = [values[1], values[2], values[3].rstrip()]
         # Insert stats to KB
         # Add columns for stats
