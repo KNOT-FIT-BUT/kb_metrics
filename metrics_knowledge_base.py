@@ -390,10 +390,13 @@ class KnowledgeBase:
         # Load stats 
         print("Loading STATS")
         stats = {}
+        line_num = 0
         with open(stats_file, "r") as file_in:
             for line in file_in:
                 values = line.split("\t")
+                line_num += 1
                 if len(values) != 4:
+                    print(f"Warning: line {line_num} skipped due to invalid number of values") 
                     continue
                 stats[values[0].replace("_"," ")] = [values[1], values[2], values[3].rstrip()]
         # Insert stats to KB
