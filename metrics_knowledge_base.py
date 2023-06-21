@@ -342,6 +342,43 @@ class KnowledgeBase:
             if stat not in stats.keys():
                 return False
         return True
+    
+    def check_stats_file(self, stats_file:str) -> bool:
+        # Check stats file
+        if not os.path.exists(stats_file):
+            print("Stats file does not exist")
+            return False
+        
+        # Check stats file head
+        ENT_LINE_REG = r"^(<(?:__)?[a-z]+(?:__)?>)(.*)$"
+        STATS_HEAD = {}
+        with open(stats_file) as stats_in:
+            while (line := stats_in.readline()).strip() != "":
+                if not line.startswith("<"):
+                    print("Stats file: incorrect format")
+                    return False
+                
+                if match := re.match(ENT_LINE_REG, line):
+                    ent_type = match.group(1).rstrip(">").lstrip("<")
+                    ent_attrs = match.group(2).split("\t")
+                    STATS_HEAD[ent_type] = ent_attrs
+                
+            # Check necessary entity types    
+            if "__general__" not in STATS_HEAD.keys() or \
+                "__stats__" not in STATS_HEAD.keys():
+                    print("Stats file: incorrect format")
+                    return False
+
+            # Check necessary entity attributes
+            if "NAME" not in STATS_HEAD["__general__"]:
+                print("Stats file: incorrect format")
+                return False
+            
+            for stat in stats_names:
+                if stat not in STATS_HEAD["__stats__"]:
+                    print("Stats file: incorrect format")
+                    return False
+            return True
 
     # Checks head kb for '__stats__' line
     # if none found returns false
@@ -373,8 +410,8 @@ class KnowledgeBase:
         if "__stats__" in self.headKB:
             return False
         
-        if not os.path.exists(stats_file):
-            print("Stats file does not exist")
+        # Check stats head
+        if not self.check_stats_file(stats_file):
             return False
         
         # Add stats to kb head
@@ -395,6 +432,10 @@ class KnowledgeBase:
         stats = {}
         line_num = 0
         with open(stats_file, "r") as file_in:
+            # Skip head
+            while file_in.readline().strip() != "":
+                pass
+            
             for line in file_in:
                 values = line.split("\t")
                 line_num += 1
