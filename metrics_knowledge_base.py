@@ -465,7 +465,7 @@ class KnowledgeBase:
             if stats.get(art_name):
                 val = stats.pop(art_name)
                 for idx, stat in enumerate(stats_names):
-                    columns[self.get_col_for(columns, stat)] = val[idx]
+                    columns[self.get_col_for(columns, stat)] = 0 if val[idx] == "NF" else val[idx]
             self.lines[line_num - 1] = columns
         
         del stats
