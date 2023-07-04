@@ -20,8 +20,9 @@ limitations under the License.
 # Author: Matej Magdolen, xmagdo00@stud.fit.vutbr.cz
 # Author: Jan Doležal, xdolez52@stud.fit.vutbr.cz
 # Author: Lubomír Otrusina, iotrusina@fit.vutbr.cz
+# Author: Jakub Štětina, xsteti05@stud.fit.vutbr.cz
 #
-# Description: Loads a knowledge base and computes metrics and scores for static disambiguation.
+# Description: Loads a knowledge base, inserts stats and computes metrics and scores for static disambiguation.
 
 import os
 import sys
