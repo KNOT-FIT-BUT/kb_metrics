@@ -63,6 +63,8 @@ class KnowledgeBase:
         else:
             self.path_to_kb = path_to_kb
 
+        self.version = ""
+
         self.headKB, self.ent_type_col = self.getDictHeadKB(self.path_to_kb)
 
         self._kb_loaded = False
@@ -93,8 +95,9 @@ class KnowledgeBase:
         lines = []
         data_part = False
         with open(fpath) as fd:
-            # skip version of KB
-            next(fd)
+            # KB version
+            self.version = fd.readline().rstrip()
+            
             for line_num, line in enumerate(fd):
                 if line == "\n":
                     if kb_part == KB_PART.HEAD:
@@ -581,10 +584,15 @@ class KnowledgeBase:
             output_file = f"{file_path}/{file_name}.{file_extension}"
 
         # Make all dirs in output path if necessary
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        if os.path.dirname(output_file):
+            os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
         print("saving changes to ", output_file)
         with open(output_file, "w") as out_file:
+            # Write KB version
+            if self.version:
+                out_file.write(self.version + "\n")
+                
             # Save KB head
             KB_lines = self.getKBLines(self.path_to_kb, KB_PART.HEAD)
             stats_added = False
