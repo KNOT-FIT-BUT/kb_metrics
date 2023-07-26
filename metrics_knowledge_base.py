@@ -117,10 +117,9 @@ class KnowledgeBase:
                         if "__generic__" in self.headKB and "__generic__" not in ent_type_set:
                             ent_type_set = OrderedSet(["__generic__"]) | ent_type_set
 
-                        min_line_cols = 0
+                        min_line_cols = 0                         
                         for item in ent_type_set:
-                            min_line_cols += len(self.headKB[item])  
-
+                            min_line_cols += sum([1 for attr in self.headKB[item] if attr is not None])
                         # Add missing columns + add columns for possible stats                      
                         lines.append(line[:-1].split("\t") + ['' for _ in range(min_line_cols - line_cols + len(all_stats))])
                     else:
@@ -252,7 +251,7 @@ class KnowledgeBase:
             if self.headKB[type_name].get(col_name) is not None:
                 return col + int(self.headKB[type_name][col_name])
             else:
-                col += len(self.headKB[type_name])
+                col += sum([1 for attr in self.headKB[type_name] if attr is not None])
         
         raise RuntimeError(f"Column name {col_name} does not exist for this line: {line}") 
 
@@ -427,7 +426,7 @@ class KnowledgeBase:
 
         print("Loading KB")
         self.check_or_load_kb()
-        
+
         # Expected stats file format
         # ARTICLE NAME \t BACKLINKS \t PAGEVIEWS (HITS) \t PRIMARY SENSE
 
