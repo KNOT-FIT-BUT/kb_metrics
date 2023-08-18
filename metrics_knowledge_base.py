@@ -346,42 +346,51 @@ class KnowledgeBase:
                 return False
         return True
     
-    def check_stats_file(self, stats_file:str) -> bool:
-        # Check stats file
-        if not os.path.exists(stats_file):
-            print("Stats file does not exist")
-            return False
-        
-        # Check stats file head
-        ENT_LINE_REG = r"^(<(?:__)?[a-z]+(?:__)?>)(.*)$"
-        STATS_HEAD = {}
-        with open(stats_file) as stats_in:
-            while (line := stats_in.readline()).strip() != "":
-                if not line.startswith("<"):
-                    print("Stats file: incorrect format")
-                    return False
-                
-                if match := re.match(ENT_LINE_REG, line):
-                    ent_type = match.group(1).rstrip(">").lstrip("<")
-                    ent_attrs = match.group(2).split("\t")
-                    STATS_HEAD[ent_type] = ent_attrs
-                
-            # Check necessary entity types    
-            if "__general__" not in STATS_HEAD.keys() or \
-                "__stats__" not in STATS_HEAD.keys():
-                    print("Stats file: incorrect format")
-                    return False
-
-            # Check necessary entity attributes
-            if "NAME" not in STATS_HEAD["__general__"]:
-                print("Stats file: incorrect format")
+    def check_stats_files(self, stats_files:list) -> bool:
+        stats_present = len(stats_names) * [False]
+        # Check stats files
+        for file in stats_files:
+            if not os.path.exists(file):
+                print(f"Stats file: {file} does not exist")
                 return False
             
-            for stat in stats_names:
-                if stat not in STATS_HEAD["__stats__"]:
+            # Check stats file head
+            ENT_LINE_REG = r"^(<(?:__)?[a-z]+(?:__)?>)(.*)$"
+            STATS_HEAD = {}
+            with open(file) as stats_in:
+                while (line := stats_in.readline()).strip() != "":
+                    if not line.startswith("<"):
+                        print("Stats file: incorrect format")
+                        return False
+                    
+                    if match := re.match(ENT_LINE_REG, line):
+                        ent_type = match.group(1).rstrip(">").lstrip("<")
+                        ent_attrs = match.group(2).split("\t")
+                        STATS_HEAD[ent_type] = ent_attrs
+                    
+                # Check necessary entity types    
+                if "__general__" not in STATS_HEAD.keys() or \
+                    "__stats__" not in STATS_HEAD.keys():
+                        print("Stats file: incorrect format")
+                        return False
+
+                # Check necessary entity attributes
+                if "NAME" not in STATS_HEAD["__general__"]:
                     print("Stats file: incorrect format")
                     return False
-            return True
+            
+            # Check for all neccessary stats
+            for i, stat in enumerate(stats_names):
+                if stat in STATS_HEAD["__stats__"]:
+                    stats_present[i] = True
+        
+        for check in stats_present:
+            if check is False:
+                print(stats_present)
+                print("Stats files: some/all stats are missing")
+                return False
+                            
+        return True
 
     # Checks head kb for '__stats__' line
     # if none found returns false
@@ -406,15 +415,16 @@ class KnowledgeBase:
         return True
     
     # Inserts statistics (backlinks, pageviews and primary sense)
-    # from an input file
+    # from input stats files 
     # Expected format <name> \t <backlinks> \t <pageviews> \t <primary sense>   
-    def insert_stats(self, stats_file, save_changes=True) -> bool:
+    def insert_stats(self, pw_path:str, bps_path:str, save_changes:bool=True) -> bool:
         # If stats already present, skip
         if "__stats__" in self.headKB:
+            print("Stats already present in KB head")
             return False
         
-        # Check stats head
-        if not self.check_stats_file(stats_file):
+        # Check stats files head
+        if not self.check_stats_files([pw_path, bps_path]):
             return False
         
         # Add stats to kb head
@@ -431,10 +441,12 @@ class KnowledgeBase:
         # ARTICLE NAME \t BACKLINKS \t PAGEVIEWS (HITS) \t PRIMARY SENSE
 
         # Load stats 
-        print("Loading STATS")
+        print("Loading STATS...")
         stats = {}
         line_num = 0
-        with open(stats_file, "r") as file_in:
+        
+        # Load pageviews
+        with open(pw_path) as file_in:
             # Skip head
             while file_in.readline().strip() != "":
                 pass
@@ -442,16 +454,44 @@ class KnowledgeBase:
             for line in file_in:
                 values = line.split("\t")
                 line_num += 1
-                if len(values) != 4:
-                    print(f"Warning: line {line_num} skipped due to invalid number of values") 
+                if len(values) != 2:
+                    print(f"Warning: line {line_num} in {pw_path} skipped due to invalid number of values") 
+                    continue
+                
+                # values[0] ARTICLE_NAME
+                # values[1] PAGEVIEWS (HITS)
+
+                art_name = values[0].replace("_"," ")
+                stats[art_name] = [0, values[1].rstrip(), 0]
+
+        print("Pageviews loaded.")
+        
+        # Load backlinks, primary sense
+        
+        with open(bps_path) as file_in:
+            # Skip head
+            while file_in.readline().strip() != "":
+                pass
+            
+            for line in file_in:
+                values = line.split("\t")
+                line_num += 1
+                if len(values) != 3:
+                    print(f"Warning: line {line_num} in {bps_path} skipped due to invalid number of values") 
                     continue
                 
                 # values[0] ARTICLE_NAME
                 # values[1] BACKLINKS
-                # values[2] PAGEVIEWS (HITS)
-                # values[3] PRIMARY_SENSE
+                # values[2] PRIMARY_SENSE
 
-                stats[values[0].replace("_"," ")] = [values[1], values[2], values[3].rstrip()]
+                art_name = values[0].replace("_"," ")
+                if art_name in stats:
+                    stats[art_name][0] = values[1] 
+                    stats[art_name][2] = values[2].rstrip()
+                else:
+                    stats[art_name] = [values[1], 0, values[2].rstrip()]
+        print("Backlinks, primary tags loaded.")
+
         # Insert stats to KB
         # Add columns for stats
         for line_num in range(1, len(self.lines) + 1):
@@ -613,7 +653,7 @@ class KnowledgeBase:
 
             # Save KB data
             for line in self.lines+[""]:
-                out_file.write("\t".join(line))
+                out_file.write("\t".join([str(val) for val in line]))
                 out_file.write("\n")
         
     def _str1(self):
@@ -627,4 +667,3 @@ class KnowledgeBase:
 
     def __str__(self):
         return self._str1()
-
