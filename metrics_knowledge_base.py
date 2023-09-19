@@ -32,11 +32,14 @@ import re
 import numpy
 from enum import Enum
 from orderedset import OrderedSet
+from ws_file_locking.locking import FileLock
 
-# CONSTANTS
 metrics_names = ["SCORE WIKI",	"SCORE METRICS", "CONFIDENCE"]
 stats_names = ["WIKI BACKLINKS", "WIKI HITS", "WIKI PRIMARY SENSE"]
 all_stats = stats_names + metrics_names
+
+LOCKED_FILE_ERR = "File Acquisition Timeout: Process Exiting with Failure"
+LOCK_TIMEOUT = 600 # 10 minutes
 
 # getting the absolute path to the directory with this script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -446,50 +449,55 @@ class KnowledgeBase:
         line_num = 0
         
         # Load pageviews
-        with open(pw_path) as file_in:
-            # Skip head
-            while file_in.readline().strip() != "":
-                pass
-            
-            for line in file_in:
-                values = line.split("\t")
-                line_num += 1
-                if len(values) != 2:
-                    print(f"Warning: line {line_num} in {pw_path} skipped due to invalid number of values") 
-                    continue
+        try:
+            with FileLock(file_path=pw_path,mode="r+",timeout_sec=LOCK_TIMEOUT) as file_in:
+                # Skip head
+                while file_in.readline().strip() != "":
+                    pass
                 
-                # values[0] ARTICLE_NAME
-                # values[1] PAGEVIEWS (HITS)
+                for line in file_in:
+                    values = line.split("\t")
+                    line_num += 1
+                    if len(values) != 2:
+                        print(f"Warning: line {line_num} in {pw_path} skipped due to invalid number of values") 
+                        continue
+                    
+                    # values[0] ARTICLE_NAME
+                    # values[1] PAGEVIEWS (HITS)
 
-                art_name = values[0].replace("_"," ")
-                stats[art_name] = [0, values[1].rstrip(), 0]
+                    art_name = values[0].replace("_"," ")
+                    stats[art_name] = [0, values[1].rstrip(), 0]
+        except TimeoutError:
+            raise TimeoutError
 
         print("Pageviews loaded.")
         
         # Load backlinks, primary sense
-        
-        with open(bps_path) as file_in:
-            # Skip head
-            while file_in.readline().strip() != "":
-                pass
-            
-            for line in file_in:
-                values = line.split("\t")
-                line_num += 1
-                if len(values) != 3:
-                    print(f"Warning: line {line_num} in {bps_path} skipped due to invalid number of values") 
-                    continue
+        try:
+            with FileLock(file_path=bps_path,mode="r+",timeout_sec=LOCK_TIMEOUT) as file_in:
+                # Skip head
+                while file_in.readline().strip() != "":
+                    pass
                 
-                # values[0] ARTICLE_NAME
-                # values[1] BACKLINKS
-                # values[2] PRIMARY_SENSE
+                for line in file_in:
+                    values = line.split("\t")
+                    line_num += 1
+                    if len(values) != 3:
+                        print(f"Warning: line {line_num} in {bps_path} skipped due to invalid number of values") 
+                        continue
+                    
+                    # values[0] ARTICLE_NAME
+                    # values[1] BACKLINKS
+                    # values[2] PRIMARY_SENSE
 
-                art_name = values[0].replace("_"," ")
-                if art_name in stats:
-                    stats[art_name][0] = values[1] 
-                    stats[art_name][2] = values[2].rstrip()
-                else:
-                    stats[art_name] = [values[1], 0, values[2].rstrip()]
+                    art_name = values[0].replace("_"," ")
+                    if art_name in stats:
+                        stats[art_name][0] = values[1] 
+                        stats[art_name][2] = values[2].rstrip()
+                    else:
+                        stats[art_name] = [values[1], 0, values[2].rstrip()]
+        except TimeoutError
+            raise TimeoutError
         print("Backlinks, primary tags loaded.")
 
         # Insert stats to KB
