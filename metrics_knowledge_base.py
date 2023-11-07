@@ -496,7 +496,7 @@ class KnowledgeBase:
                         stats[art_name][2] = values[2].rstrip()
                     else:
                         stats[art_name] = [values[1], 0, values[2].rstrip()]
-        except TimeoutError
+        except TimeoutError:
             raise TimeoutError
         print("Backlinks, primary tags loaded.")
 
