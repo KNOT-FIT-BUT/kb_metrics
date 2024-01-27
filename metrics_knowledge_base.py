@@ -340,8 +340,10 @@ class KnowledgeBase:
         else:
             return self.get_data_for(line, column_name)
 
-    # Check if all stats present in kb head
+    
     def check_all_stats_present(self) -> bool:
+        """ Checks if all stats are present in kb head """
+
         self.check_or_load_kb()
         stats = self.headKB['__stats__']
         for stat in all_stats:
@@ -395,11 +397,14 @@ class KnowledgeBase:
                             
         return True
 
-    # Checks head kb for '__stats__' line
-    # if none found returns false
-    # if found checks for backlinks, hits and ps (needed for calculating metrics)
-    # adds empty columns for new metrics (needed in order for the script to run properly)
     def check_add_kb_stats(self) -> bool:
+        """
+        * Checks head kb for '__stats__' line
+        * if none found returns false
+        * if found checks for backlinks, hits and ps (needed for calculating metrics)
+        * adds empty columns for new metrics (needed in order for the script to run properly)
+        """
+        
         # Check for neccessary staxs in KB head
         if "__stats__" not in self.headKB:
             return False
@@ -417,10 +422,14 @@ class KnowledgeBase:
         
         return True
     
-    # Inserts statistics (backlinks, pageviews and primary sense)
-    # from input stats files 
-    # Expected format <name> \t <backlinks> \t <pageviews> \t <primary sense>   
+    
     def insert_stats(self, pw_path:str, bps_path:str, save_changes:bool=True) -> bool:
+        """
+        * Inserts statistics (backlinks, pageviews and primary sense)
+        * from input stats files 
+        * Expected format <name> \t <backlinks> \t <pageviews> \t <primary sense>   
+        """
+        
         # If stats already present, skip
         if "__stats__" in self.headKB:
             print("Stats already present in KB head")
@@ -524,8 +533,8 @@ class KnowledgeBase:
         return True
       
 
-    # Computing SCORE WIKI, SCORE METRICS and CONFIDENCE and adding them to the KB
     def insert_metrics(self, save_changes=True):
+        """Computing SCORE WIKI, SCORE METRICS and CONFIDENCE and adding them to the KB"""
         
         self.check_or_load_kb()
 
