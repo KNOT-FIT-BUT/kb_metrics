@@ -1,3 +1,0 @@
-[submodule "ws_file_locking"]
-	path = ws_file_locking
-	url = git@github.com:KNOT-FIT-BUT/ws_file_locking.git
