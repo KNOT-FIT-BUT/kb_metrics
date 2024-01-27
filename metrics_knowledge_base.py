@@ -32,7 +32,7 @@ import re
 import numpy
 from enum import Enum
 from orderedset import OrderedSet
-from ws_file_locking.locking import FileLock
+from os.path import realpath
 
 metrics_names = ["SCORE WIKI",	"SCORE METRICS", "CONFIDENCE"]
 stats_names = ["WIKI BACKLINKS", "WIKI HITS", "WIKI PRIMARY SENSE"]
@@ -449,55 +449,51 @@ class KnowledgeBase:
         line_num = 0
         
         # Load pageviews
-        try:
-            with FileLock(file_path=pw_path,mode="r+",timeout_sec=LOCK_TIMEOUT) as file_in:
-                # Skip head
-                while file_in.readline().strip() != "":
-                    pass
+        with open(realpath(pw_path)) as file_in:
+            # Skip head
+            while file_in.readline().strip() != "":
+                pass
+            
+            for line in file_in:
+                values = line.split("\t")
+                line_num += 1
+                if len(values) != 2:
+                    print(f"Warning: line {line_num} in {pw_path} skipped due to invalid number of values") 
+                    continue
                 
-                for line in file_in:
-                    values = line.split("\t")
-                    line_num += 1
-                    if len(values) != 2:
-                        print(f"Warning: line {line_num} in {pw_path} skipped due to invalid number of values") 
-                        continue
-                    
-                    # values[0] ARTICLE_NAME
-                    # values[1] PAGEVIEWS (HITS)
+                # values[0] ARTICLE_NAME
+                # values[1] PAGEVIEWS (HITS)
 
-                    art_name = values[0].replace("_"," ")
-                    stats[art_name] = [0, values[1].rstrip(), 0]
-        except TimeoutError:
-            raise TimeoutError
+                art_name = values[0].replace("_"," ")
+                stats[art_name] = [0, values[1].rstrip(), 0]
+
 
         print("Pageviews loaded.")
         
         # Load backlinks, primary sense
-        try:
-            with FileLock(file_path=bps_path,mode="r+",timeout_sec=LOCK_TIMEOUT) as file_in:
-                # Skip head
-                while file_in.readline().strip() != "":
-                    pass
+        with open(bps_path, "r") as file_in:  
+            # Skip head
+            while file_in.readline().strip() != "":
+                pass
+            
+            for line in file_in:
+                values = line.split("\t")
+                line_num += 1
+                if len(values) != 3:
+                    print(f"Warning: line {line_num} in {bps_path} skipped due to invalid number of values") 
+                    continue
                 
-                for line in file_in:
-                    values = line.split("\t")
-                    line_num += 1
-                    if len(values) != 3:
-                        print(f"Warning: line {line_num} in {bps_path} skipped due to invalid number of values") 
-                        continue
-                    
-                    # values[0] ARTICLE_NAME
-                    # values[1] BACKLINKS
-                    # values[2] PRIMARY_SENSE
+                # values[0] ARTICLE_NAME
+                # values[1] BACKLINKS
+                # values[2] PRIMARY_SENSE
 
-                    art_name = values[0].replace("_"," ")
-                    if art_name in stats:
-                        stats[art_name][0] = values[1] 
-                        stats[art_name][2] = values[2].rstrip()
-                    else:
-                        stats[art_name] = [values[1], 0, values[2].rstrip()]
-        except TimeoutError:
-            raise TimeoutError
+                art_name = values[0].replace("_"," ")
+                if art_name in stats:
+                    stats[art_name][0] = values[1] 
+                    stats[art_name][2] = values[2].rstrip()
+                else:
+                    stats[art_name] = [values[1], 0, values[2].rstrip()]
+
         print("Backlinks, primary tags loaded.")
 
         # Insert stats to KB
